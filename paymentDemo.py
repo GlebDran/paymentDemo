@@ -38,13 +38,15 @@ def saada_email(to_email, payment_reference):
     msg["To"] = to_email
 
     try:
-        server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
+        server = smtplib.SMTP("smtp.gmail.com", 587)  # Обычное соединение
+        server.starttls()  # Переключаем на защищённое соединение
         server.login(sender, password)
         server.send_message(msg)
         server.quit()
         print("E-mail saadetud!")
     except Exception as e:
         print("E-maili saatmise viga:", e)
+
 
 
 # Логирование платежей
@@ -73,7 +75,7 @@ def kontrolli_makset():
         logi_makse(payment_reference, seisund)
 
         if seisund == "settled":
-            saada_email("client@example.com", payment_reference)
+            saada_email("glebdranitsyn@gmail.com", payment_reference)
     else:
         messagebox.showerror("Ошибка", f"Не удалось проверить платёж: {response.text}")
 
