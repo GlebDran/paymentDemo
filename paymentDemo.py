@@ -1,5 +1,5 @@
 import requests
-import json #база данных
+import json
 import base64
 import webbrowser
 import tkinter as tk
@@ -9,7 +9,7 @@ import random
 import string
 import smtplib
 from email.mime.text import MIMEText
-
+import re
 
 # EveryPay данные
 API_URL = "https://igw-demo.every-pay.com/api/v4/payments/oneoff"
@@ -19,12 +19,11 @@ ACCOUNT_NAME = "EUR3D1"
 CUSTOMER_URL = "https://maksmine.web.app/makse"
 
 payment_reference = ""  # Глобально для хранения ID платежа
-
+user_email = ""  # Глобально для хранения введенного e-mail
 
 # Генерация nonce
 def generate_nonce(length=16):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
-
 
 # Отправка email после успешной оплаты
 def saada_email(to_email, payment_reference):
@@ -47,17 +46,14 @@ def saada_email(to_email, payment_reference):
     except Exception as e:
         print("E-maili saatmise viga:", e)
 
-
-
 # Логирование платежей
 def logi_makse(payment_reference, status):
     with open("maksete_logi.txt", "a", encoding="utf-8") as file:
         file.write(f"{datetime.now()} - {payment_reference} - {status}\n")
 
-
 # Проверка статуса платежа
 def kontrolli_makset():
-    global payment_reference
+    global payment_reference, user_email
     if not payment_reference:
         messagebox.showerror("Ошибка", "Сначала нужно создать платёж.")
         return
@@ -75,18 +71,27 @@ def kontrolli_makset():
         logi_makse(payment_reference, seisund)
 
         if seisund == "settled":
-            saada_email("glebdranitsyn@gmail.com", payment_reference)
+            saada_email(user_email, payment_reference)
     else:
         messagebox.showerror("Ошибка", f"Не удалось проверить платёж: {response.text}")
 
-
+# Валидация e-mail
+def validate_email(email):
+    pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+    return re.match(pattern, email)
 
 # Создание платежа
 def create_payment():
-    global payment_reference
+    global payment_reference, user_email
     amount = amount_entry.get().strip()
+    user_email = email_entry.get().strip()
+
     if not amount or not amount.replace(".", "", 1).isdigit():
         messagebox.showerror("Ошибка", "Введите корректную сумму")
+        return
+    
+    if not validate_email(user_email):
+        messagebox.showerror("Ошибка", "Введите корректный e-mail")
         return
 
     data = {
@@ -115,16 +120,18 @@ def create_payment():
     else:
         messagebox.showerror("Ошибка", f"Не удалось создать платёж: {response.status_code}\n{response.text}")
 
-
 # GUI
 app = tk.Tk()
 app.title("Оплата через EveryPay")
-app.geometry("400x300")
+app.geometry("400x350")
 
-tk.Label(app, text="Введите сумму для оплаты:", font=("Arial", 12)).pack(pady=10)
-
+tk.Label(app, text="Введите сумму для оплаты:", font=("Arial", 12)).pack(pady=5)
 amount_entry = tk.Entry(app, font=("Arial", 14))
 amount_entry.pack(pady=5)
+
+tk.Label(app, text="Введите ваш e-mail:", font=("Arial", 12)).pack(pady=5)
+email_entry = tk.Entry(app, font=("Arial", 14))
+email_entry.pack(pady=5)
 
 pay_button = tk.Button(app, text="Оплатить", font=("Arial", 14), command=create_payment, bg="green", fg="white")
 pay_button.pack(pady=10)
