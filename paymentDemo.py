@@ -1,5 +1,5 @@
 import requests
-import json
+import json #база данных
 import base64
 import webbrowser
 import tkinter as tk
